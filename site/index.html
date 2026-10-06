@@ -1,0 +1,503 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Course Search Links</title>
+<script>
+  // Launch mode: if the address carries a search, this page acts as the
+  // redirect. Decide before first paint so the demo never flashes.
+  (function () {
+    var p = new URLSearchParams(location.search);
+    if (['kw', 'venue', 'sort', 'days'].some(function (k) { return p.has(k); })) {
+      document.documentElement.classList.add('launch');
+    }
+  })();
+</script>
+<style>
+  :root {
+    --bg: #f6f4f7;
+    --surface: #ffffff;
+    --text: #1d1424;
+    --muted: #5b5064;
+    --line: #e3dde8;
+    --brand: #2A0E42;
+    --brand-ink: #ffffff;
+    --accent: #CE1719;
+    --btn: #2A0E42;
+    --btn-hover: #CE1719;
+    --chip: #efe9f4;
+    --code: #f3f1f3;
+    --ok: #1d7a46;
+    --radius: 10px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141018;
+      --surface: #1e1824;
+      --text: #ece6f1;
+      --muted: #b3a8bd;
+      --line: #352c3d;
+      --accent: #ff6b6d;
+      --btn: #6b3fa0;
+      --btn-hover: #CE1719;
+      --chip: #2a2231;
+      --code: #19141e;
+      --ok: #5fd08f;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #141018; --surface: #1e1824; --text: #ece6f1; --muted: #b3a8bd;
+    --line: #352c3d; --accent: #ff6b6d; --btn: #6b3fa0; --btn-hover: #CE1719;
+    --chip: #2a2231; --code: #19141e; --ok: #5fd08f;
+  }
+
+  * { box-sizing: border-box; }
+  html { -webkit-text-size-adjust: 100%; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  html.launch #demo, html:not(.launch) #launch { display: none; }
+
+  a { color: var(--accent); }
+  :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 16px; }
+
+  /* Hero */
+  .hero { background: var(--brand); color: var(--brand-ink); padding: 40px 0 36px; }
+  .eyebrow { font-size: .8rem; letter-spacing: .08em; text-transform: uppercase; opacity: .75; margin: 0 0 6px; }
+  .hero h1 { margin: 0 0 10px; font-size: clamp(1.7rem, 4vw, 2.4rem); line-height: 1.15; }
+  .hero p { margin: 0; max-width: 62ch; opacity: .92; }
+
+  main { padding: 28px 0 48px; display: grid; gap: 28px; }
+  section.card {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 24px;
+  }
+  h2 { margin: 0 0 4px; font-size: 1.3rem; }
+  .lead { margin: 0 0 20px; color: var(--muted); max-width: 70ch; }
+  h3 { margin: 0 0 8px; font-size: 1rem; }
+
+  /* Example tiles */
+  .mock {
+    border: 1px dashed var(--line); border-radius: var(--radius);
+    padding: 20px; background: var(--bg);
+  }
+  .mock-title { margin: 0 0 14px; font-size: 1.15rem; color: var(--text); }
+  .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+  .tile {
+    display: block; text-decoration: none; color: var(--text);
+    background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--brand);
+    border-radius: 8px; padding: 14px 16px; transition: border-color .15s, transform .15s;
+  }
+  .tile:hover { border-left-color: var(--accent); transform: translateY(-1px); }
+  .tile strong { display: block; font-size: 1.02rem; }
+  .tile span { display: block; font-size: .86rem; color: var(--muted); margin-top: 2px; }
+  .tile .arrow { float: right; color: var(--accent); font-weight: 700; }
+  .hint { font-size: .86rem; color: var(--muted); margin: 12px 0 0; }
+
+  /* Builder */
+  .builder { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 24px; }
+  @media (max-width: 820px) { .builder { grid-template-columns: minmax(0, 1fr); } }
+  .field { margin-bottom: 14px; }
+  label, .label { display: block; font-weight: 600; font-size: .9rem; margin-bottom: 5px; }
+  input[type=text], input[type=url], select {
+    width: 100%; font: inherit; color: var(--text); background: var(--surface);
+    border: 1px solid var(--line); border-radius: 6px; padding: 8px 10px;
+  }
+  select option:disabled { color: var(--muted); }
+  .days { display: flex; flex-wrap: wrap; gap: 6px; border: 0; padding: 0; margin: 0 0 16px; }
+  .days legend { padding: 0; margin-bottom: 5px; font-weight: 600; font-size: .9rem; }
+  .day { position: relative; }
+  .day input { position: absolute; opacity: 0; inset: 0; margin: 0; cursor: pointer; }
+  .day span {
+    display: inline-block; min-width: 46px; text-align: center; padding: 6px 8px;
+    border: 1px solid var(--line); border-radius: 999px; font-size: .88rem; background: var(--surface);
+  }
+  .day input:checked + span { background: var(--btn); border-color: var(--btn); color: #fff; }
+  .day input:focus-visible + span { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .small { font-size: .82rem; color: var(--muted); margin: 4px 0 0; }
+
+  .out { margin-bottom: 20px; }
+  .out-head { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; flex-wrap: wrap; }
+  .row { display: flex; gap: 8px; }
+  .row input { flex: 1; min-width: 0; font-family: ui-monospace, Consolas, monospace; font-size: .85rem; }
+  pre {
+    margin: 0; background: var(--code); border: 1px solid var(--line); border-radius: 6px;
+    padding: 10px 12px; font: .8rem/1.5 ui-monospace, Consolas, monospace;
+    overflow: auto; max-height: 260px; white-space: pre;
+  }
+  .btn, button.btn {
+    font: inherit; font-weight: 600; font-size: .9rem; cursor: pointer; white-space: nowrap;
+    background: var(--btn); color: #fff; border: 0; border-radius: 6px; padding: 8px 14px;
+    text-decoration: none; display: inline-block;
+  }
+  .btn:hover { background: var(--btn-hover); }
+  .btn.ghost { background: transparent; color: var(--text); border: 1px solid var(--line); }
+  .btn.ghost:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+  .preview { padding: 16px; border: 1px dashed var(--line); border-radius: 6px; background: var(--bg); }
+  .status { font-size: .85rem; color: var(--ok); min-height: 1.3em; margin: 6px 0 0; }
+
+  /* How it works */
+  .steps { list-style: none; padding: 0; margin: 0 0 20px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 14px; counter-reset: s; }
+  .steps li { counter-increment: s; background: var(--bg); border-radius: 8px; padding: 14px 16px 14px 52px; position: relative; }
+  .steps li::before {
+    content: counter(s); position: absolute; left: 14px; top: 13px; width: 26px; height: 26px;
+    border-radius: 50%; background: var(--brand); color: #fff; font-weight: 700; font-size: .85rem;
+    display: grid; place-items: center;
+  }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .steps li::before { background: var(--btn); } }
+  .steps code { white-space: nowrap; overflow-wrap: normal; }
+  .notes { margin: 0; padding-left: 20px; }
+  .notes li { margin-bottom: 6px; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: .88em; background: var(--chip); padding: 1px 5px; border-radius: 4px; overflow-wrap: anywhere; }
+
+  footer { color: var(--muted); font-size: .82rem; padding: 0 0 32px; }
+
+  /* Launch screen */
+  #launch { min-height: 100vh; display: grid; place-items: center; padding: 16px; text-align: center; }
+  html:not(.launch) #launch { display: none; }
+  #launch p { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<!-- ============ LAUNCH MODE: turns ?kw=…&venue=… into the course finder's POST ============ -->
+<section id="launch" aria-live="polite">
+  <form id="launchForm" method="post">
+    <h1 style="font-size:1.3rem;margin:0 0 6px">Taking you to our course search…</h1>
+    <p>If nothing happens, use the button.</p>
+    <button class="btn" type="submit">Show courses</button>
+  </form>
+</section>
+
+<!-- ============ DEMO MODE ============ -->
+<div id="demo">
+  <header class="hero">
+    <div class="wrap">
+      <p class="eyebrow">On Course South West · demo</p>
+      <h1>Link straight to a course search</h1>
+      <p>Our course finder only runs a search when someone submits its form, so an ordinary link can't open a filtered list. This page shows a small workaround: a link that fills in the form for you and sends you to the results.</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <main>
+
+      <section class="card" aria-labelledby="ex-h">
+        <h2 id="ex-h">How it could look on a web page</h2>
+        <p class="lead">Each tile is an ordinary link. Click one and the live course finder opens with that search already run.</p>
+        <div class="mock">
+          <p class="mock-title"><strong>Find your next course</strong></p>
+          <div class="tiles" id="tiles"></div>
+        </div>
+        <p class="hint">Tiles open in a new tab so this page stays open. Each one is a normal link you can post on Instagram, in an email or as a QR code.</p>
+      </section>
+
+      <section class="card" aria-labelledby="b-h">
+        <h2 id="b-h">Build your own link</h2>
+        <p class="lead">Pick a search. You get a link for emails, QR codes and social posts, plus a button you can paste into any page that accepts HTML.</p>
+
+        <div class="builder">
+          <form id="builder" onsubmit="return false">
+            <div class="field">
+              <label for="kw">Keyword</label>
+              <input type="text" id="kw" placeholder="e.g. digital, security, english" autocomplete="off">
+            </div>
+            <div class="field">
+              <label for="venue">Venue</label>
+              <select id="venue"></select>
+            </div>
+            <div class="field">
+              <label for="sort">Sort by</label>
+              <select id="sort">
+                <option value="StartDate">Start date</option>
+                <option value="Venue">Venue</option>
+                <option value="Qualification">Qualification</option>
+                <option value="CourseTitle">Course title</option>
+                <option value="Relevance">Relevance (needs a keyword)</option>
+              </select>
+            </div>
+            <fieldset class="days field" id="days">
+              <legend>Days (optional)</legend>
+            </fieldset>
+            <div class="field">
+              <label for="label">Button text</label>
+              <input type="text" id="label" value="See our courses">
+            </div>
+            <div class="field">
+              <label for="base">Link address</label>
+              <input type="url" id="base">
+              <p class="small">Links point at this page by default. Change it only if the redirect is also hosted somewhere else, such as a Wix page.</p>
+            </div>
+          </form>
+
+          <div>
+            <div class="out">
+              <div class="out-head"><span class="label">Link</span></div>
+              <div class="row">
+                <input type="text" id="outUrl" readonly aria-label="Generated link">
+                <button class="btn" type="button" data-copy="outUrl">Copy</button>
+              </div>
+              <div class="actions">
+                <a class="btn ghost" id="openUrl" href="#" target="_blank" rel="noopener">Open link</a>
+                <button class="btn ghost" type="button" id="searchNow">Search now</button>
+              </div>
+            </div>
+
+            <div class="out">
+              <div class="out-head">
+                <span class="label">Button code</span>
+                <button class="btn ghost" type="button" data-copy="outCode">Copy code</button>
+              </div>
+              <pre id="outCode" tabindex="0" aria-label="Button HTML"></pre>
+            </div>
+
+            <div class="out">
+              <span class="label">Button preview</span>
+              <div class="preview" id="preview"></div>
+              <p class="small">On your site the button takes your site's own styling.</p>
+            </div>
+            <p class="status" id="status" role="status"></p>
+          </div>
+        </div>
+      </section>
+
+      <section class="card" aria-labelledby="h-h">
+        <h2 id="h-h">How it works</h2>
+        <p class="lead">Nothing changes on the course finder. The link carries the search in its address, and this page hands it over in the format the course finder expects.</p>
+        <ol class="steps">
+          <li><strong>Someone clicks a link</strong><br>ending in something like<br><code>?kw=digital&amp;venue=1177</code></li>
+          <li><strong>This page reads the search</strong><br>and fills in the same fields as the course finder's form</li>
+          <li><strong>The browser submits it</strong><br>and the visitor lands on the real results page</li>
+        </ol>
+        <h3>Good to know</h3>
+        <ul class="notes">
+          <li>Pressing Back on the results takes the visitor to where they came from.</li>
+          <li>Individual courses already have their own address, for example <code>/Course/Details/16256</code>, so they need none of this.</li>
+          <li>The cleanest long-term fix is for Cognisoft to accept search terms in the course finder's own address. These links could then point there directly.</li>
+        </ul>
+      </section>
+
+    </main>
+    <footer>Searches run on the live course finder at coursesocsw.cognisoft.cloud. Source: <a href="https://github.com/flaviocfneto/OCSW_Redirect">github.com/flaviocfneto/OCSW_Redirect</a>.</footer>
+  </div>
+</div>
+
+<script>
+(function () {
+  var COURSE_SITE = 'https://coursesocsw.cognisoft.cloud/';
+
+  var VENUES = [
+    [959, 'Central Library'], [961, 'Cobourg House (Main Venue)'], [1209, 'Crownhill Library'],
+    [1213, 'Dame Hannah Rogers Trust'], [966, 'Devonport Library'], [967, 'Devonport Park'],
+    [1210, 'Efford Library'], [973, 'Ernesettle Community School'], [1208, 'Foulston Park'],
+    [975, 'Four Greens Community Trust'], [985, 'HMS Drake'], [990, 'Jan Cutting Healthy Living Centre'],
+    [992, 'Knowle Primary School'], [993, 'Laira Green Primary School'], [1116, "Lark Children's Centre"],
+    [995, 'Leigham Primary School'], [997, 'Marine Academy Primary'], [1002, 'Montpelier Primary School'],
+    [1004, "Morice Town Children's Centre"], [1012, 'Oakwood Primary'], [1102, 'ODILS'],
+    [943, 'On Course South West'], [1177, 'Online Delivery'],
+    [1050, 'Open Doors International Language Schools (ODILS)'], [1014, 'Oxford House Creative Hub'],
+    [1015, 'Pennycross Primary School'], [1197, 'Plaistow Hill Primary School'],
+    [1196, 'Pluss Learning Disability Team'], [1215, 'Plymouth Engineering Centre'],
+    [1024, 'Salisbury Road Primary'], [1217, 'Saltash Studios'], [1185, 'Shekinah (1185)'],
+    [1048, 'Shekinah (1048)'], [1211, 'Southway Library'], [1029, 'St Budeaux Library'],
+    [1031, "St George's Primary"], [1222, "St Mark's Church"], [1189, "St Peter's RC Primary School (PL5)"],
+    [1035, 'Stoke Damerel Community College'], [1040, 'The Barn Family Hub'], [1170, 'The Plot'],
+    [1042, 'Tothill Community Centre'], [1216, 'Vicarage Residential Home'],
+    [1045, 'Widey Court Primary School'], [1115, 'Wolseley Community Hub'],
+    [1047, 'Yealmpstone Farm Primary School'], [1180, 'YMCA Discovery'], [1152, 'YMCA Plymouth']
+  ];
+  var DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  var SORTS = ['StartDate', 'Venue', 'Qualification', 'CourseTitle', 'Relevance'];
+
+  // ---------- shared helpers ----------
+  function cleanState(s) {
+    var kw = (s.kw || '').trim();
+    var sort = SORTS.indexOf(s.sort) !== -1 ? s.sort : 'StartDate';
+    if (sort === 'Relevance' && !kw) sort = 'StartDate';
+    var venue = /^\d+$/.test(String(s.venue || '')) ? String(s.venue) : '0';
+    var days = (s.days || []).map(Number).filter(function (d) { return d >= 1 && d <= 7; });
+    days = days.filter(function (d, i) { return days.indexOf(d) === i; }).sort();
+    return { kw: kw, venue: venue, sort: sort, days: days };
+  }
+
+  // Exactly what the course finder's own form sends, in the same order.
+  function formFields(s) {
+    var f = [['options.Venue', s.venue], ['options.KeyWord', s.kw], ['options.SortBy', s.sort]];
+    for (var d = 1; d <= 7; d++) {
+      if (s.days.indexOf(d) !== -1) f.push(['days', String(d)]);
+      f.push(['days', 'false']);
+    }
+    return f;
+  }
+
+  function fillForm(form, s) {
+    form.method = 'post';
+    form.action = COURSE_SITE;
+    formFields(s).forEach(function (pair) {
+      var i = document.createElement('input');
+      i.type = 'hidden'; i.name = pair[0]; i.value = pair[1];
+      form.appendChild(i);
+    });
+    return form;
+  }
+
+  function stateFromParams(p) {
+    return cleanState({
+      kw: p.get('kw'), venue: p.get('venue'), sort: p.get('sort'),
+      days: (p.get('days') || '').split(',')
+    });
+  }
+
+  function toQuery(s) {
+    var q = new URLSearchParams();
+    if (s.kw) q.set('kw', s.kw);
+    if (s.venue !== '0') q.set('venue', s.venue);
+    if (s.sort !== 'StartDate') q.set('sort', s.sort);
+    if (s.days.length) q.set('days', s.days.join(','));
+    if (!q.toString()) q.set('kw', '');   // "all courses" still needs a marker
+    return q.toString().replace(/%2C/g, ',');
+  }
+
+  function esc(v) {
+    return String(v).replace(/&/g, '&amp;').replace(/"/g, '&quot;')
+      .replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  var selfBase = location.href.split(/[?#]/)[0];
+
+  // ---------- LAUNCH MODE ----------
+  if (document.documentElement.classList.contains('launch')) {
+    var form = fillForm(document.getElementById('launchForm'), stateFromParams(new URLSearchParams(location.search)));
+    window.addEventListener('pageshow', function (e) {
+      var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+      if (e.persisted || (nav && nav.type === 'back_forward')) {
+        history.back();          // came Back from the results: keep going back
+        return;
+      }
+      form.submit();
+    });
+    return;
+  }
+
+  // ---------- DEMO MODE ----------
+  var TILES = [
+    { t: 'Digital skills', d: 'Keyword "digital"', s: { kw: 'digital' } },
+    { t: 'Cyber and data security', d: 'Keyword "security"', s: { kw: 'security' } },
+    { t: 'Learn online', d: 'Venue: Online Delivery', s: { venue: '1177' } },
+    { t: 'At Cobourg House', d: 'Venue: Cobourg House', s: { venue: '961' } },
+    { t: 'English', d: 'Keyword "english"', s: { kw: 'english' } },
+    { t: 'Monday courses', d: 'Day: Monday', s: { days: [2] } }
+  ];
+  var tiles = document.getElementById('tiles');
+  TILES.forEach(function (x) {
+    var a = document.createElement('a');
+    a.className = 'tile';
+    a.href = selfBase + '?' + toQuery(cleanState(x.s));
+    a.target = '_blank'; a.rel = 'noopener';
+    a.innerHTML = '<span class="arrow" aria-hidden="true">&rarr;</span><strong></strong><span></span>';
+    a.querySelector('strong').textContent = x.t;
+    a.querySelector('span:last-child').textContent = x.d;
+    tiles.appendChild(a);
+  });
+
+  // Builder controls
+  var $ = function (id) { return document.getElementById(id); };
+  var venueSel = $('venue');
+  venueSel.add(new Option('Any venue', '0'));
+  VENUES.forEach(function (v) { venueSel.add(new Option(v[1], String(v[0]))); });
+
+  var daysBox = $('days');
+  DAY_NAMES.forEach(function (n, i) {
+    var l = document.createElement('label'); l.className = 'day';
+    l.innerHTML = '<input type="checkbox" value="' + (i + 1) + '"><span>' + n + '</span>';
+    daysBox.appendChild(l);
+  });
+
+  $('base').value = selfBase;
+
+  function readState() {
+    var days = [].map.call(daysBox.querySelectorAll('input:checked'), function (c) { return c.value; });
+    return cleanState({ kw: $('kw').value, venue: venueSel.value, sort: $('sort').value, days: days });
+  }
+
+  function snippet(s, label) {
+    var lines = ['<form method="post" action="' + COURSE_SITE + '">'];
+    formFields(s).forEach(function (p) {
+      lines.push('  <input type="hidden" name="' + p[0] + '" value="' + esc(p[1]) + '">');
+    });
+    lines.push('  <button type="submit">' + esc(label) + '</button>', '</form>');
+    return lines.join('\n');
+  }
+
+  function update() {
+    var s = readState();
+    var label = $('label').value.trim() || 'See our courses';
+    var relevance = $('sort').querySelector('option[value="Relevance"]');
+    relevance.disabled = !s.kw;
+    if (!s.kw && $('sort').value === 'Relevance') $('sort').value = 'StartDate';
+
+    var base = ($('base').value.trim() || selfBase).split(/[?#]/)[0];
+    var url = base + '?' + toQuery(s);
+    $('outUrl').value = url;
+    $('openUrl').href = url;
+    $('outCode').textContent = snippet(s, label);
+
+    var prev = $('preview');
+    prev.innerHTML = '';
+    var f = fillForm(document.createElement('form'), s);
+    f.target = '_blank';
+    var b = document.createElement('button');
+    b.type = 'submit'; b.className = 'btn'; b.textContent = label;
+    f.appendChild(b);
+    prev.appendChild(f);
+  }
+
+  $('builder').addEventListener('input', update);
+  $('builder').addEventListener('change', update);
+
+  $('searchNow').addEventListener('click', function () {
+    var f = fillForm(document.createElement('form'), readState());
+    f.target = '_blank';
+    document.body.appendChild(f);
+    f.submit();
+    f.remove();
+  });
+
+  // Copy buttons
+  function copyText(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (res, rej) {
+      var t = document.createElement('textarea');
+      t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+      document.body.appendChild(t); t.select();
+      try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); }
+      t.remove();
+    });
+  }
+  var statusTimer;
+  document.querySelectorAll('[data-copy]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var el = $(btn.getAttribute('data-copy'));
+      var text = 'value' in el && el.tagName === 'INPUT' ? el.value : el.textContent;
+      var what = el.tagName === 'INPUT' ? 'Link' : 'Button code';
+      copyText(text).then(function () {
+        $('status').textContent = what + ' copied.';
+      }, function () {
+        $('status').textContent = 'Copy failed. Select the text and copy it by hand.';
+      });
+      clearTimeout(statusTimer);
+      statusTimer = setTimeout(function () { $('status').textContent = ''; }, 3000);
+    });
+  });
+
+  update();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,65 @@
+<!--
+  OCSW course search launcher: Wix custom code snippet
+  ----------------------------------------------------
+  Turns  https://www.oncoursesouthwest.co.uk/course-search?kw=digital&venue=1177
+  into the form POST the course finder (coursesocsw.cognisoft.cloud) expects,
+  so the visitor lands on the results with the search already run.
+
+  Wix setup:
+    1. Add a page with the URL slug "course-search". Hide it from the menu.
+       Put a short text on it, e.g. "Taking you to our course search…"
+    2. Settings > Custom Code (under Development & integrations) > + Add Custom Code
+       - Paste everything below this comment
+       - Add Code to Pages: Choose specific pages > course-search
+       - Place Code in: Body - end
+       - Load code once
+    3. Publish.
+
+  Link parameters (all optional):
+    kw     keyword                         kw=digital
+    venue  venue ID from the course finder venue=961 (Cobourg House), 1177 (Online Delivery)
+    sort   StartDate | Venue | Qualification | CourseTitle | Relevance (needs kw)
+    days   comma list, 1=Sun ... 7=Sat     days=2,4
+-->
+<script>
+(function () {
+  var PAGE_PATH = '/course-search';                       // only ever runs on this page
+  var COURSE_SITE = 'https://coursesocsw.cognisoft.cloud/';
+
+  var path = location.pathname.replace(/\/+$/, '');
+  if (path.slice(-PAGE_PATH.length) !== PAGE_PATH || window.__ocswCourseSearch) return;
+  window.__ocswCourseSearch = true;
+
+  // Came back from the results with the Back button: keep going back.
+  var nav = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+  if (nav && nav.type === 'back_forward') { history.back(); return; }
+  window.addEventListener('pageshow', function (e) { if (e.persisted) history.back(); });
+
+  var p = new URLSearchParams(location.search);
+  var kw = (p.get('kw') || '').trim();
+  var venue = /^\d+$/.test(p.get('venue') || '') ? p.get('venue') : '0';
+  var sort = ['StartDate', 'Venue', 'Qualification', 'CourseTitle', 'Relevance']
+    .indexOf(p.get('sort')) !== -1 ? p.get('sort') : 'StartDate';
+  if (sort === 'Relevance' && !kw) sort = 'StartDate';
+  var days = (p.get('days') || '').split(',').map(function (d) { return d.trim(); });
+
+  var form = document.createElement('form');
+  form.method = 'post';
+  form.action = COURSE_SITE;
+  form.style.display = 'none';
+  function add(name, value) {
+    var i = document.createElement('input');
+    i.type = 'hidden'; i.name = name; i.value = value;
+    form.appendChild(i);
+  }
+  add('options.Venue', venue);
+  add('options.KeyWord', kw);
+  add('options.SortBy', sort);
+  for (var d = 1; d <= 7; d++) {                         // same order as the real form
+    if (days.indexOf(String(d)) !== -1) add('days', String(d));
+    add('days', 'false');
+  }
+  document.body.appendChild(form);
+  form.submit();
+})();
+</script>
