@@ -122,3 +122,39 @@ def test_no_parameters_shows_demo(page, base_url):
     page.fill("#kw", "english")
     page.select_option("#venue", "1177")
     assert page.input_value("#outUrl") == f"{base_url}?kw=english&venue=1177"
+
+
+def decode_qr(png_path):
+    import cv2
+    text, _, _ = cv2.QRCodeDetector().detectAndDecode(cv2.imread(str(png_path)))
+    return text
+
+
+@pytest.mark.parametrize("size,colour", [("400", "#000000"), ("2000", "#2A0E42")])
+def test_qr_png_download_scans_to_link(page, base_url, tmp_path, size, colour):
+    page.goto(base_url)
+    page.fill("#kw", "AI for Productivity")
+    page.select_option("#qrSize", size)
+    page.select_option("#qrColour", colour)
+    link = page.input_value("#outUrl")
+    assert link == f"{base_url}?kw=AI+for+Productivity"
+
+    with page.expect_download() as info:
+        page.click("#qrDownload")
+    download = info.value
+    assert download.suggested_filename == "ocsw-courses-ai-for-productivity.png"
+    png = tmp_path / download.suggested_filename
+    download.save_as(png)
+
+    import cv2
+    height, width = cv2.imread(str(png)).shape[:2]
+    assert width == height and int(size) * 0.85 <= width <= int(size)
+    assert decode_qr(png) == link
+
+
+def test_qr_preview_follows_the_link(page, base_url):
+    page.goto(base_url)
+    before = page.evaluate("document.getElementById('qrCanvas').toDataURL()")
+    page.fill("#kw", "Coding")
+    after = page.evaluate("document.getElementById('qrCanvas').toDataURL()")
+    assert before != after

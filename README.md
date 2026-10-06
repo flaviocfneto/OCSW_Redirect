@@ -26,8 +26,8 @@ https://flaviocfneto.github.io/OCSW_Redirect/?kw=digital&venue=1177
 All parameters are optional, but a link needs at least one to redirect. Bad values fall back to the
 defaults rather than breaking the search.
 
-Open the site with no parameters to get the demo page and **link builder**. It makes links and
-paste-in button code for you.
+Open the site with no parameters to get the demo page and **link builder**. It makes links,
+paste-in button code and a **QR code PNG** (three sizes, black or OCSW purple) for you.
 
 ## How it works
 
@@ -41,6 +41,7 @@ paste-in button code for you.
 
 ```
 site/index.html                     the redirect + demo page (published to GitHub Pages)
+site/vendor/qrcode.js               QR code library (qrcode-generator 1.4.4, Kazuhiko Arase, MIT licence)
 extras/wix-course-search-snippet.html  same redirect as Wix custom code, for an oncoursesouthwest.co.uk address
 tests/test_redirect.py              browser tests (Playwright + pytest)
 .github/workflows/pages.yml         runs the tests, then deploys site/ from the default branch

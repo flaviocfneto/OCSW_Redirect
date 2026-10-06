@@ -140,6 +140,11 @@
   .btn.ghost:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
   .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
   .preview { padding: 16px; border: 1px dashed var(--line); border-radius: 6px; background: var(--bg); }
+  .qr { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+  .qr-box { background: #fff; border: 1px solid var(--line); border-radius: 6px; padding: 8px; line-height: 0; }
+  .qr-box canvas { width: 160px; height: 160px; image-rendering: pixelated; }
+  .qr-opts { flex: 1; min-width: 180px; }
+  .qr-opts .field { margin-bottom: 10px; }
   .status { font-size: .85rem; color: var(--ok); min-height: 1.3em; margin: 6px 0 0; }
 
   /* How it works */
@@ -262,6 +267,32 @@
               <div class="preview" id="preview"></div>
               <p class="small">On your site the button takes your site's own styling.</p>
             </div>
+
+            <div class="out">
+              <span class="label">QR code</span>
+              <div class="qr">
+                <div class="qr-box"><canvas id="qrCanvas" role="img" aria-label="QR code for the link"></canvas></div>
+                <div class="qr-opts">
+                  <div class="field">
+                    <label for="qrSize">Size</label>
+                    <select id="qrSize">
+                      <option value="400">Small (400 px): screens, social posts</option>
+                      <option value="1000" selected>Medium (1000 px): flyers, posters</option>
+                      <option value="2000">Large (2000 px): big prints, banners</option>
+                    </select>
+                  </div>
+                  <div class="field">
+                    <label for="qrColour">Colour</label>
+                    <select id="qrColour">
+                      <option value="#000000">Black</option>
+                      <option value="#2A0E42">OCSW purple</option>
+                    </select>
+                  </div>
+                  <button class="btn" type="button" id="qrDownload">Download PNG</button>
+                </div>
+              </div>
+              <p class="small">Scan it with your phone before printing. The white border is part of the code, so don't crop it.</p>
+            </div>
             <p class="status" id="status" role="status"></p>
           </div>
         </div>
@@ -288,6 +319,7 @@
   </div>
 </div>
 
+<script src="vendor/qrcode.js"></script>
 <script>
 (function () {
   var COURSE_SITE = 'https://coursesocsw.cognisoft.cloud/';
@@ -456,7 +488,57 @@
     b.type = 'submit'; b.className = 'btn'; b.textContent = label;
     f.appendChild(b);
     prev.appendChild(f);
+    updateQr();
   }
+
+  // ---------- QR code ----------
+  var QR_MARGIN = 4;   // modules of white border; scanners need it
+
+  function drawQr(canvas, text, size, colour) {
+    var qr = qrcode(0, 'M');
+    qr.addData(text);
+    qr.make();
+    var n = qr.getModuleCount();
+    var scale = Math.max(1, Math.floor(size / (n + QR_MARGIN * 2)));
+    canvas.width = canvas.height = (n + QR_MARGIN * 2) * scale;
+    var ctx = canvas.getContext('2d');
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = colour;
+    for (var r = 0; r < n; r++) {
+      for (var c = 0; c < n; c++) {
+        if (qr.isDark(r, c)) ctx.fillRect((c + QR_MARGIN) * scale, (r + QR_MARGIN) * scale, scale, scale);
+      }
+    }
+    return canvas;
+  }
+
+  function qrFileName(s) {
+    var bits = [s.kw, s.venue !== '0' ? 'venue-' + s.venue : '', s.days.length ? 'days-' + s.days.join('') : '']
+      .filter(Boolean).join('-');
+    var slug = bits.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+    return 'ocsw-courses-' + (slug || 'all') + '.png';
+  }
+
+  function updateQr() {
+    drawQr($('qrCanvas'), $('outUrl').value, 160, $('qrColour').value);
+  }
+
+  $('qrColour').addEventListener('change', updateQr);
+  $('qrDownload').addEventListener('click', function () {
+    var c = drawQr(document.createElement('canvas'), $('outUrl').value,
+                   Number($('qrSize').value), $('qrColour').value);
+    var name = qrFileName(readState());
+    c.toBlob(function (blob) {
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+    }, 'image/png');
+  });
 
   $('builder').addEventListener('input', update);
   $('builder').addEventListener('change', update);
