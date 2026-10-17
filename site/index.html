@@ -209,6 +209,11 @@
 
         <div class="builder">
           <form id="builder" onsubmit="return false">
+            <div class="field" id="presetField" hidden>
+              <label for="preset">Course preset</label>
+              <select id="preset"><option value="">Choose a course (optional)</option></select>
+              <p class="small" id="presetNote"></p>
+            </div>
             <div class="field">
               <label for="kw">Keyword</label>
               <input type="text" id="kw" placeholder="e.g. digital, security, english" autocomplete="off">
@@ -320,6 +325,7 @@
 </div>
 
 <script src="vendor/qrcode.js"></script>
+<script src="presets.js"></script>
 <script>
 (function () {
   var COURSE_SITE = 'https://coursesocsw.cognisoft.cloud/';
@@ -452,6 +458,32 @@
   });
 
   $('base').value = selfBase;
+
+  // Course presets (presets.js, made by tools/build_presets.py): course names the
+  // course finder's search was tested with. Picking one fills in the keyword.
+  var presetSel = $('preset');
+  var PRESETS = (window.OCSW_PRESETS && window.OCSW_PRESETS.presets) || [];
+  if (PRESETS.length) {
+    var groups = {};
+    PRESETS.forEach(function (x) {
+      if (!groups[x.area]) {
+        groups[x.area] = document.createElement('optgroup');
+        groups[x.area].label = x.area;
+        presetSel.appendChild(groups[x.area]);
+      }
+      groups[x.area].appendChild(new Option(x.name + ' (' + x.runs + (x.runs === 1 ? ' run' : ' runs') + ')', x.kw));
+    });
+    $('presetNote').textContent = PRESETS.length + ' course names, each tested on the course finder on ' +
+      window.OCSW_PRESETS.tested + '. Run counts are upcoming runs found that day.';
+    $('presetField').hidden = false;
+    presetSel.addEventListener('change', function () {
+      if (presetSel.value) $('kw').value = presetSel.value;
+    });
+    $('kw').addEventListener('input', function () {
+      presetSel.value = $('kw').value.trim();
+      if (presetSel.selectedIndex === -1) presetSel.value = '';
+    });
+  }
 
   function readState() {
     var days = [].map.call(daysBox.querySelectorAll('input:checked'), function (c) { return c.value; });

@@ -158,3 +158,16 @@ def test_qr_preview_follows_the_link(page, base_url):
     page.fill("#kw", "Coding")
     after = page.evaluate("document.getElementById('qrCanvas').toDataURL()")
     assert before != after
+
+
+def test_preset_fills_keyword(page, base_url):
+    page.goto(base_url)
+    assert page.is_visible("#preset")
+    page.select_option("#preset", "AI for Productivity")
+    assert page.input_value("#kw") == "AI for Productivity"
+    assert page.input_value("#outUrl") == f"{base_url}?kw=AI+for+Productivity"
+    # Typing a keyword of your own clears the preset; typing a preset's keyword selects it again.
+    page.fill("#kw", "excel")
+    assert page.input_value("#preset") == ""
+    page.fill("#kw", "Digital Tools")
+    assert page.input_value("#preset") == "Digital Tools"
