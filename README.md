@@ -61,6 +61,20 @@ upcoming runs.
   so they don't get stuck in a re-submit loop.
 - If JavaScript is off, the visitor gets the demo page instead of a redirect.
 
+## Design
+
+The page follows the OCSW Moodle theme at its default level, 3 · balanced
+(`moodle-ocsw/moodle-platform/theme/levels/ocsw_boost_bs5_3_balanced.scss`). It uses the same hex values
+in the same roles:
+
+- a deep purple (`#2A0E42`) hero and footer, each with a 3px gold (`#FCB813`) rule;
+- charcoal body text, purple (`#6E268C`) links, focus rings and filled buttons that turn white on hover;
+- Lexend for headings and buttons, Atkinson Hyperlegible Next for body text, Atkinson Hyperlegible Mono for code;
+- 6px corners, 44px touch targets, and a gold focus ring on the purple bands.
+
+Like Moodle, it is light only. The fonts come from Google Fonts on the demo page only. A visitor following
+a search link never loads them. If the theme's palette changes, update the `:root` block in `site/index.html`.
+
 ## Repo layout
 
 ```
