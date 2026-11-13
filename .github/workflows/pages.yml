@@ -19,7 +19,7 @@ jobs:
         with:
           python-version: "3.12"
       # Wheels only (no setup scripts run), and only the exact files hashed in the lock file.
-      - run: pip install --only-binary :all: --require-hashes -r requirements-dev.txt
+      - run: "pip install --only-binary :all: --require-hashes -r requirements-dev.txt"
       - run: python -m playwright install --with-deps chromium
       - run: python -m pytest -v
 
