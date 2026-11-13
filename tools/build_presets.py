@@ -91,7 +91,7 @@ CODE_RX = re.compile(r"^(?:([A-Z]{2})\d{2}[A-Z]\d{2}[A-Z](?:-\d+)?\s*(?:-\s*)?)?
 # Slips in the course finder's titles: a first word typed twice ("3D 3D Modelling"), and the
 # programme added after the name ("Christmas Craft - Family Learning").
 DOUBLED_RX = re.compile(r"^(\w+)\s+\1\b")
-PROGRAMME_RX = re.compile(r"\s*-\s*Family Learning\s*$", re.I)
+PROGRAMME_RX = re.compile(r" ?- ?Family Learning$", re.I)  # runs on titles with single spaces, already trimmed
 # Topic prefixes OCSW puts before the course name: "Digital - ", "Family Fun: ".
 TOPIC_RX = re.compile(r"^(?:Digital|Wellbeing|Employability|Life Skills|Creative Crafts|Cook it Up|"
                       r"Family [Ff]un)\s*[-:]\s*")
