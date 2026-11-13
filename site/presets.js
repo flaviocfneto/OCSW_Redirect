@@ -3,11 +3,25 @@
 // found then, others = runs of other courses it also found (the finder searches descriptions too).
 window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
  {
+  "name": "Accounting",
+  "kw": "Accounting",
+  "area": "Accountancy and bookkeeping",
+  "runs": 3,
+  "others": 2
+ },
+ {
   "name": "Bookkeeping",
   "kw": "Bookkeeping",
   "area": "Accountancy and bookkeeping",
   "runs": 5,
   "others": 1
+ },
+ {
+  "name": "Business Skills AAT",
+  "kw": "Business Skills AAT",
+  "area": "Accountancy and bookkeeping",
+  "runs": 2,
+  "others": 0
  },
  {
   "name": "Principles of Business Administration",
@@ -52,9 +66,58 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "(C) Life Skills - Living on a Budget / Money Saving Ideas",
-  "kw": "(C) Life Skills - Living on a Budget / Money Saving Ideas",
-  "area": "Community courses",
+  "name": "Caring for Children and Young People",
+  "kw": "Caring for Children and Young People",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "ChildCare SWAP 2",
+  "kw": "ChildCare SWAP 2",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Intro to Child Care",
+  "kw": "Intro to Child Care",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Intro to Working in Schools",
+  "kw": "Intro to Working in Schools",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "L1 Award Caring for Children",
+  "kw": "L1 Award Caring for Children",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "L1 Preparing to Work in Schools",
+  "kw": "L1 Preparing to Work in Schools",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Support Teaching and Learning L2 Cert",
+  "kw": "Support Teaching and Learning L2 Cert",
+  "area": "Childcare and education",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Understanding Safeguarding and Prevent",
+  "kw": "Understanding Safeguarding and Prevent",
+  "area": "Childcare and education",
   "runs": 1,
   "others": 0
  },
@@ -66,31 +129,10 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "Batch Cooking",
-  "kw": "Batch Cooking",
-  "area": "Community courses",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "Ciao Holiday Italian",
   "kw": "Ciao Holiday Italian",
   "area": "Community courses",
   "runs": 3,
-  "others": 0
- },
- {
-  "name": "Cooking @ Wolseley",
-  "kw": "Cooking @ Wolseley",
-  "area": "Community courses",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "Cooking Pluss",
-  "kw": "Cooking Pluss",
-  "area": "Community courses",
-  "runs": 1,
   "others": 0
  },
  {
@@ -143,13 +185,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "DIY Takeaway Favourites",
-  "kw": "DIY Takeaway Favourites",
-  "area": "Community courses",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "Employability PACT 3",
   "kw": "Employability PACT 3",
   "area": "Community courses",
@@ -195,8 +230,8 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "name": "Living on a Budget / Money Saving Ideas",
   "kw": "Living on a Budget / Money Saving Ideas",
   "area": "Community courses",
-  "runs": 3,
-  "others": 1
+  "runs": 4,
+  "others": 0
  },
  {
   "name": "Mindful Crafting",
@@ -227,18 +262,39 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "Volunteer Opportunities",
-  "kw": "Volunteer Opportunities",
-  "area": "Community courses",
-  "runs": 2,
+  "name": "Batch Cooking",
+  "kw": "Batch Cooking",
+  "area": "Cookery",
+  "runs": 1,
   "others": 0
  },
  {
-  "name": "Budget Festive Gifts",
-  "kw": "Budget Festive Gifts",
-  "area": "Creative",
+  "name": "Cooking @ Wolseley",
+  "kw": "Cooking @ Wolseley",
+  "area": "Cookery",
   "runs": 1,
   "others": 0
+ },
+ {
+  "name": "Cooking Pluss",
+  "kw": "Cooking Pluss",
+  "area": "Cookery",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "DIY Takeaway Favourites",
+  "kw": "DIY Takeaway Favourites",
+  "area": "Cookery",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Counselling Skills",
+  "kw": "Counselling Skills",
+  "area": "Counselling",
+  "runs": 4,
+  "others": 2
  },
  {
   "name": "Spring Sustainability",
@@ -311,13 +367,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "3D 3D Modelling with Blender",
-  "kw": "3D 3D Modelling with Blender",
-  "area": "Digital and creative",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "3D Design FABLAB",
   "kw": "3D Design FABLAB",
   "area": "Digital and creative",
@@ -328,21 +377,7 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "name": "3D Modelling with Blender",
   "kw": "3D Modelling with Blender",
   "area": "Digital and creative",
-  "runs": 4,
-  "others": 1
- },
- {
-  "name": "Accounting",
-  "kw": "Accounting",
-  "area": "Digital and creative",
-  "runs": 3,
-  "others": 2
- },
- {
-  "name": "Business Skills AAT",
-  "kw": "Business Skills AAT",
-  "area": "Digital and creative",
-  "runs": 2,
+  "runs": 5,
   "others": 0
  },
  {
@@ -376,13 +411,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
  {
   "name": "Multimedia Storytelling",
   "kw": "Multimedia Storytelling",
-  "area": "Digital and creative",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "Skills Bootcamp Coaching & Mentoring",
-  "kw": "Skills Bootcamp Coaching & Mentoring",
   "area": "Digital and creative",
   "runs": 1,
   "others": 0
@@ -500,10 +528,31 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
+  "name": "Volunteer Opportunities",
+  "kw": "Volunteer Opportunities",
+  "area": "Employability",
+  "runs": 2,
+  "others": 0
+ },
+ {
+  "name": "English Functional Skills",
+  "kw": "English Functional Skills",
+  "area": "English and maths",
+  "runs": 2,
+  "others": 0
+ },
+ {
   "name": "GCSE English Language",
   "kw": "GCSE English Language",
   "area": "English and maths",
   "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Maths Functional Skills",
+  "kw": "Maths Functional Skills",
+  "area": "English and maths",
+  "runs": 2,
   "others": 0
  },
  {
@@ -517,15 +566,8 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "name": "Christmas Craft",
   "kw": "Christmas Craft",
   "area": "Family learning",
-  "runs": 1,
-  "others": 12
- },
- {
-  "name": "Christmas Craft - Family Learning",
-  "kw": "Christmas Craft - Family Learning",
-  "area": "Family learning",
-  "runs": 11,
-  "others": 0
+  "runs": 12,
+  "others": 1
  },
  {
   "name": "Family First Aid workshop",
@@ -591,13 +633,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "ChildCare SWAP 2",
-  "kw": "ChildCare SWAP 2",
-  "area": "Health and social care",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "Dementia Care",
   "kw": "L2 Certificate in Dementia Care",
   "area": "Health and social care",
@@ -612,13 +647,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "English Functional Skills",
-  "kw": "English Functional Skills",
-  "area": "Health and social care",
-  "runs": 2,
-  "others": 0
- },
- {
   "name": "Intro Health and Social Care",
   "kw": "Intro Health and Social Care",
   "area": "Health and social care",
@@ -626,50 +654,8 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "Intro to Child Care",
-  "kw": "Intro to Child Care",
-  "area": "Health and social care",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "Intro to Learning Disabilities",
   "kw": "Intro to Learning Disabilities",
-  "area": "Health and social care",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "Intro to Working in Schools",
-  "kw": "Intro to Working in Schools",
-  "area": "Health and social care",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "L1 Award Caring for Children",
-  "kw": "L1 Award Caring for Children",
-  "area": "Health and social care",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "L1 Preparing to Work in Schools",
-  "kw": "L1 Preparing to Work in Schools",
-  "area": "Health and social care",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "Maths Functional Skills",
-  "kw": "Maths Functional Skills",
-  "area": "Health and social care",
-  "runs": 2,
-  "others": 0
- },
- {
-  "name": "Skills Bootcamp Teaching Support and Learning in Schools",
-  "kw": "Skills Bootcamp Teaching Support and Learning in Schools",
   "area": "Health and social care",
   "runs": 1,
   "others": 0
@@ -701,20 +687,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "area": "Online qualifications",
   "runs": 1,
   "others": 0
- },
- {
-  "name": "Caring for Children and Young People",
-  "kw": "Caring for Children and Young People",
-  "area": "Online qualifications",
-  "runs": 1,
-  "others": 0
- },
- {
-  "name": "Counselling Skills",
-  "kw": "Counselling Skills",
-  "area": "Online qualifications",
-  "runs": 4,
-  "others": 2
  },
  {
   "name": "Customer Service for Health & Social Care Settings",
@@ -885,13 +857,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "Understanding Safeguarding and Prevent",
-  "kw": "Understanding Safeguarding and Prevent",
-  "area": "Online qualifications",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "Understanding the Principles of Dementia Care",
   "kw": "Understanding the Principles of Dementia Care",
   "area": "Online qualifications",
@@ -934,13 +899,6 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 0
  },
  {
-  "name": "Support Teaching and Learning L2 Cert",
-  "kw": "Support Teaching and Learning L2 Cert",
-  "area": "Other courses",
-  "runs": 1,
-  "others": 0
- },
- {
   "name": "Pre-Supported Internship 26/27",
   "kw": "Pre-Supported Internship 26/27",
   "area": "SEND programmes",
@@ -955,9 +913,30 @@ window.OCSW_PRESETS = { tested: "2026-11-13", presets: [
   "others": 1
  },
  {
+  "name": "Skills Bootcamp Coaching & Mentoring",
+  "kw": "Skills Bootcamp Coaching & Mentoring",
+  "area": "Skills bootcamps",
+  "runs": 1,
+  "others": 0
+ },
+ {
   "name": "Skills Bootcamp Skills For Care",
   "kw": "Skills Bootcamp Skills For Care",
   "area": "Skills bootcamps",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Skills Bootcamp Teaching Support and Learning in Schools",
+  "kw": "Skills Bootcamp Teaching Support and Learning in Schools",
+  "area": "Skills bootcamps",
+  "runs": 1,
+  "others": 0
+ },
+ {
+  "name": "Budget Festive Gifts",
+  "kw": "Budget Festive Gifts",
+  "area": "Wellbeing and life skills",
   "runs": 1,
   "others": 0
  },
