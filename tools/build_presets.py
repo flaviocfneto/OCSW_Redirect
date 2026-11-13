@@ -52,7 +52,6 @@ PAGE_AREAS = {
     "accountancy": "Accountancy and bookkeeping",
     "businessandcustomerservice": "Business and customer service",
     "childcareandeducation": "Childcare and education",
-    "copy-of-health-social-care": "Health and social care",
     "healthandsocialcare": "Health and social care",
     "counselling": "Counselling",
     "creativecourses": "Creative",
@@ -60,11 +59,23 @@ PAGE_AREAS = {
     "employability": "Employability",
     "family-learning": "Family learning",
     "gcses": "English and maths",
+    "general-4": "Cookery",
     "languages": "Languages",
     "sendprogrammes": "SEND programmes",
     "skillsbootcamps": "Skills bootcamps",
+    "volunteering": "Employability",
     "wellbeing": "Wellbeing and life skills",
 }
+# A page that lists courses from every subject. A course also linked from a subject page takes that subject.
+GENERAL_PAGES = {"e-learningqualifications"}
+# Words in a course name -> area, for courses the website doesn't link to. First match wins.
+NAME_AREAS = [
+    (r"Skills Bootcamp", "Skills bootcamps"),
+    (r"\bAAT\b|Accounting|Bookkeeping", "Accountancy and bookkeeping"),
+    (r"Functional Skills|\bGCSE", "English and maths"),
+    (r"Counselling", "Counselling"),
+    (r"Child ?[Cc]are|Children|Schools|Teaching", "Childcare and education"),
+]
 # Course code prefix -> area, for courses the website doesn't link to.
 CODE_AREAS = {
     "DC": "Digital and creative",
@@ -75,8 +86,12 @@ CODE_AREAS = {
 }
 OTHER = "Other courses"
 
-# Run code at the start of a title: "DC26T22A ", "PH26F23B-2 ", "FL26W22J - ".
-CODE_RX = re.compile(r"^([A-Z]{2})\d{2}[A-Z]\d{2}[A-Z](?:-\d+)?\s*(?:-\s*)?")
+# Run code at the start of a title: "DC26T22A ", "PH26F23B-2 ", "FL26W22J - ", then any "(C) " marker.
+CODE_RX = re.compile(r"^(?:([A-Z]{2})\d{2}[A-Z]\d{2}[A-Z](?:-\d+)?\s*(?:-\s*)?)?(?:\([A-Z]\)\s*)?")
+# Slips in the course finder's titles: a first word typed twice ("3D 3D Modelling"), and the
+# programme added after the name ("Christmas Craft - Family Learning").
+DOUBLED_RX = re.compile(r"^(\w+)\s+\1\b")
+PROGRAMME_RX = re.compile(r"\s*-\s*Family Learning\s*$", re.I)
 # Topic prefixes OCSW puts before the course name: "Digital - ", "Family Fun: ".
 TOPIC_RX = re.compile(r"^(?:Digital|Wellbeing|Employability|Life Skills|Creative Crafts|Cook it Up|"
                       r"Family [Ff]un)\s*[-:]\s*")
@@ -132,7 +147,8 @@ def search(kw):
 
 def course_name(title):
     """'DC26T22B AI for Productivity Improvers' -> 'AI for Productivity'."""
-    t = re.sub(r"\s+", " ", CODE_RX.sub("", title.strip()))
+    t = bare_title(title)
+    t = PROGRAMME_RX.sub("", t)
     t = TOPIC_RX.sub("", t)
     t = TAIL_RX.sub("", t)
     t = re.sub(r"\(HCE\)\s*", "", t)
@@ -143,7 +159,7 @@ def course_name(title):
 
 def bare_title(title):
     """'DC26A11E Introduction to Customer Service Level 1' -> 'Introduction to Customer Service Level 1'."""
-    return re.sub(r"\s+", " ", CODE_RX.sub("", title.strip())).strip(" -:")
+    return DOUBLED_RX.sub(r"\1", re.sub(r"\s+", " ", CODE_RX.sub("", title.strip())).strip(" -:"))
 
 
 def best_keyword(name, titles, first_hits):
@@ -162,8 +178,22 @@ def best_keyword(name, titles, first_hits):
 
 
 def code_area(title):
-    m = CODE_RX.match(title.strip())
-    return CODE_AREAS.get(m.group(1), OTHER) if m else OTHER
+    """Area for a course the website doesn't link to: from words in its name, else from its run code."""
+    for pattern, area in NAME_AREAS:
+        if re.search(pattern, title):
+            return area
+    return CODE_AREAS.get(CODE_RX.match(title.strip()).group(1), OTHER)
+
+
+def page_area(slugs, linked):
+    """Area for a course linked from these website pages; linked[slug] = how many courses that page links to.
+
+    A subject page beats a general list, then the page with the fewest courses (the most specific) wins.
+    """
+    known = [s for s in slugs if s in PAGE_AREAS]
+    if not known:
+        return None
+    return PAGE_AREAS[min(known, key=lambda s: (s in GENERAL_PAGES, linked[s], known.index(s)))]
 
 
 def site_titles():
@@ -172,13 +202,13 @@ def site_titles():
     pages = []
     for sm in re.findall(r"<loc>([^<]+)</loc>", sitemap):
         pages += [u for u in re.findall(r"<loc>([^<]+)</loc>", get(sm)) if not u.endswith(".xml")]
-    links = {}
+    links = {}  # course id -> the pages that link to it
     with ThreadPoolExecutor(8) as pool:
         for url, body in zip(pages, pool.map(lambda u: _safe(get, u), pages)):
             slug = url.replace(OCSW_SITE, "").strip("/")
-            for cid in re.findall(r"coursesocsw\.cognisoft\.cloud/Course/Details/(\d+)", body or ""):
-                links.setdefault(cid, PAGE_AREAS.get(slug))
-    titles = {}
+            for cid in set(re.findall(r"coursesocsw\.cognisoft\.cloud/Course/Details/(\d+)", body or "")):
+                links.setdefault(cid, []).append(slug)
+    live = {}  # course id -> title, for runs that are still on the course finder
     with ThreadPoolExecutor(8) as pool:
         ids = list(links)
         for cid, body in zip(ids, pool.map(lambda c: _safe(get, COURSE_SITE + "Course/Details/" + c), ids)):
@@ -186,7 +216,14 @@ def site_titles():
             heads = [h.strip() for h in re.findall(r"<h[12][^<>]*>([^<]+)<", body or "")]
             # Runs that have gone redirect to the search page; skip them.
             if len(heads) > 1 and heads[0] == "Course Details":
-                titles.setdefault(html.unescape(heads[1]), links[cid])
+                live[cid] = html.unescape(heads[1])
+    linked = {}
+    for cid in live:
+        for slug in links[cid]:
+            linked[slug] = linked.get(slug, 0) + 1
+    titles = {}
+    for cid, title in live.items():
+        titles.setdefault(title, page_area(links[cid], linked))
     return titles, len(pages)
 
 

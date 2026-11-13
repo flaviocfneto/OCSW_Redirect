@@ -52,6 +52,11 @@ right course. Refresh the presets each term:
 python tools/build_presets.py     # needs internet access; standard library only
 ```
 
+Each preset's subject group comes from the OCSW website page that links to the course (the
+`PAGE_AREAS` table in the script). A course on several pages takes its subject page over the
+general online-qualifications list. A course the website doesn't link to is grouped by words in
+its name, then by its run code. The rules have tests in `tests/test_build_presets.py`.
+
 It rewrites `site/presets.js` and `tools/presets_report.md`. The report lists what each keyword
 matched, the few that still find other courses, and the names it dropped because they have no
 upcoming runs.
@@ -89,6 +94,7 @@ tools/presets_report.md             what each preset matched when it was last te
 tools/course_guide.json             course names and pathways from the digital course guide (edited by hand)
 extras/wix-course-search-snippet.html  same redirect as Wix custom code, for an oncoursesouthwest.co.uk address
 tests/test_redirect.py              browser tests (Playwright + pytest)
+tests/test_build_presets.py         tests for the preset builder's name and subject rules (no network)
 requirements-dev.in                 test dependencies; requirements-dev.txt is the hashed lock file made from it
 .github/workflows/pages.yml         runs the tests, then deploys site/ from the default branch
 ```
