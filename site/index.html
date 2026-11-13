@@ -546,8 +546,9 @@
       if (!s.kw && $('sort').value === 'Relevance') $('sort').value = 'StartDate';
 
       // Web addresses only: the link below is clickable, so a typed "javascript:" address must not reach it.
-      var base = $('base').value.trim().split(/[?#]/)[0];
-      if (!/^https?:\/\//i.test(base)) base = selfBase;
+      // The scheme is written out here, not copied from what was typed.
+      var typed = /^(https?):\/\/([^?#]*)/i.exec($('base').value.trim());
+      var base = typed ? (typed[1].toLowerCase() === 'http' ? 'http://' : 'https://') + typed[2] : selfBase;
       var url = base + '?' + toQuery(s);
       $('outUrl').value = url;
       $('openUrl').href = url;
