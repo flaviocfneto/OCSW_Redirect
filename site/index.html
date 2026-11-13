@@ -280,9 +280,10 @@
                 <button class="btn" type="button" data-copy="outUrl">Copy</button>
               </div>
               <div class="actions">
-                <a class="btn ghost" id="openUrl" href="#" target="_blank" rel="noopener">Open link</a>
+                <button class="btn ghost" type="button" id="openUrl">Open link</button>
                 <button class="btn ghost" type="button" id="searchNow">Search now</button>
               </div>
+              <p class="small" id="openNote" hidden>Open link only works with this page's own address. To try a link with another address, copy it and paste it into your browser.</p>
             </div>
 
             <div class="out">
@@ -545,13 +546,13 @@
       relevance.disabled = !s.kw;
       if (!s.kw && $('sort').value === 'Relevance') $('sort').value = 'StartDate';
 
-      // Web addresses only: the link below is clickable, so a typed "javascript:" address must not reach it.
-      // The scheme is written out here, not copied from what was typed.
-      var typed = /^(https?):\/\/([^?#]*)/i.exec($('base').value.trim());
-      var base = typed ? (typed[1].toLowerCase() === 'http' ? 'http://' : 'https://') + typed[2] : selfBase;
-      var url = base + '?' + toQuery(s);
-      $('outUrl').value = url;
-      $('openUrl').href = url;
+      // Web addresses only. The link is shown as text for copying and drawn as a QR code;
+      // nothing typed here is ever put in a clickable link (see the Open link button).
+      var base = $('base').value.trim().split(/[?#]/)[0];
+      if (!/^https?:\/\//i.test(base)) base = selfBase;
+      $('outUrl').value = base + '?' + toQuery(s);
+      $('openUrl').disabled = base !== selfBase;
+      $('openNote').hidden = base === selfBase;
       $('outCode').textContent = snippet(s, label);
 
       var prev = $('preview');
@@ -631,6 +632,21 @@
 
     $('builder').addEventListener('input', update);
     $('builder').addEventListener('change', update);
+
+    // Open link: a GET form to this page, so the browser builds the address from the
+    // fields itself. Typed text is only ever a field value, never part of an href.
+    $('openUrl').addEventListener('click', function () {
+      var f = document.createElement('form');
+      f.method = 'get'; f.target = '_blank'; f.rel = 'noopener';
+      new URLSearchParams(toQuery(readState())).forEach(function (value, name) {
+        var i = document.createElement('input');
+        i.type = 'hidden'; i.name = name; i.value = value;
+        f.appendChild(i);
+      });
+      document.body.appendChild(f);
+      f.submit();
+      f.remove();
+    });
 
     $('searchNow').addEventListener('click', function () {
       var f = fillForm(document.createElement('form'), readState());

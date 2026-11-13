@@ -66,8 +66,9 @@ def page(browser):
         route.fulfill(status=200, content_type="text/html",
                       body='<title>Instagram</title><a id="go" href="about:blank">go</a>')
 
-    page.route(COURSE_SITE + "**", course_finder)
-    page.route(REFERRER + "**", referrer)
+    # On the context, so tabs the page opens are covered too.
+    context.route(COURSE_SITE + "**", course_finder)
+    context.route(REFERRER + "**", referrer)
     yield page
     context.close()
 
@@ -210,9 +211,131 @@ def test_builder_works_without_the_qr_library(page, base_url):
     assert page.is_visible("#preset") and page.is_visible("#qrNote")
 
 
+# ---------- hostile input ----------
+# Everything a person can type or put in a link, tried as markup and as script addresses.
+
+MARKUP = [
+    '"><img src=x onerror="window.__xss=1">',
+    "</pre><script>window.__xss=1</script>",
+    "'><svg onload=window.__xss=1>",
+    "</button></form><iframe srcdoc='<script>parent.__xss=1</script>'></iframe>",
+    "&lt;img src=x onerror=window.__xss=1&gt;",
+]
+SCRIPT_ADDRESSES = [
+    "javascript:window.__xss=1//",
+    "JaVaScRiPt:window.__xss=1//",
+    " javascript:window.__xss=1//",
+    "java\tscript:window.__xss=1//",
+    "data:text/html,<script>opener.__xss=1</script>",
+    "vbscript:msgbox(1)",
+    "//evil.test/x",
+    "https:javascript:window.__xss=1",
+    'https://ok.test/"onmouseover="window.__xss=1',
+]
+
+
+def assert_no_script_ran(page):
+    assert page.evaluate("window.__xss") is None
+    # Nothing clickable or submittable on the page points anywhere but a web address or this page.
+    bad = page.evaluate("""() => [...document.querySelectorAll('a[href], form[action], [formaction], iframe, img, svg')]
+        .map(e => e.tagName + ' ' + (e.href || e.action || e.formAction || e.src || ''))
+        .filter(t => !/^(A|FORM) https?:\\/\\//.test(t))""")
+    assert bad == []
+
+
+@pytest.fixture
+def no_dialogs(page):
+    seen = []
+    page.on("dialog", lambda d: (seen.append(d.message), d.dismiss()))
+    yield
+    assert seen == []
+
+
+@pytest.mark.parametrize("text", MARKUP)
+def test_typed_markup_stays_text(page, base_url, no_dialogs, text):
+    page.goto(base_url)
+    page.fill("#kw", text)
+    page.fill("#label", text)
+    assert_no_script_ran(page)
+    # The preview button and the code box show the text as typed.
+    assert page.text_content("#preview button") == text
+    assert page.locator("#preview *").count() == 2 + 3 + 7  # form + button + its hidden fields
+    assert page.locator("#outCode *").count() == 0
+    # The button code, pasted into a page, is one form that sends the keyword unchanged.
+    parsed = page.evaluate("""() => {
+        const d = new DOMParser().parseFromString(document.getElementById('outCode').textContent, 'text/html');
+        return { tags: [...d.body.querySelectorAll('*')].map(e => e.tagName).join(','),
+                 kw: d.querySelector('[name="options.KeyWord"]').value,
+                 label: d.querySelector('button').textContent,
+                 action: d.querySelector('form').action };
+    }""")
+    assert parsed == {"tags": "FORM," + "INPUT," * 10 + "BUTTON", "kw": text, "label": text, "action": COURSE_SITE}
+    # The link carries the keyword back intact.
+    link = page.input_value("#outUrl")
+    assert launch(page, link.split("?")[0], link.split("?", 1)[1]) == expected_body(kw=text)
+
+
+@pytest.mark.parametrize("text", MARKUP)
+def test_markup_in_a_link_is_sent_as_text(page, base_url, no_dialogs, text):
+    from urllib.parse import quote
+    body = launch(page, base_url, f"kw={quote(text)}&venue={quote(text)}&sort={quote(text)}&days={quote(text)}")
+    assert body == expected_body(kw=text)
+
+
+@pytest.mark.parametrize("text", MARKUP)
+def test_markup_in_a_link_never_reaches_the_page(page, base_url, no_dialogs, text):
+    """The redirect page, held still (its form submit is stubbed) so what it built can be inspected."""
+    from urllib.parse import quote
+    page.add_init_script("HTMLFormElement.prototype.submit = function () { window.__held = true; }")
+    page.goto(f"{base_url}?kw={quote(text)}&venue={quote(text)}&sort={quote(text)}&days={quote(text)}")
+    page.wait_for_function("window.__held")
+    page.wait_for_timeout(200)  # time for an injected image or frame to fire
+    assert_no_script_ran(page)
+    tags = page.evaluate("[...document.querySelectorAll('#launch *')].map(e => e.tagName).join(',')")
+    assert tags == "FORM,H1,P,BUTTON" + ",INPUT" * 10
+    assert page.input_value("#launchForm [name='options.KeyWord']") == text
+
+
+@pytest.mark.parametrize("address", SCRIPT_ADDRESSES)
+def test_link_address_cannot_run_script(page, base_url, no_dialogs, address):
+    page.goto(base_url)
+    page.fill("#base", address)
+    page.fill("#kw", "english")
+    link = page.input_value("#outUrl")
+    assert link.startswith(("http://", "https://"))
+    if link.startswith(base_url):                      # not a web address: ignored
+        assert link == f"{base_url}?kw=english"
+        with page.expect_popup() as popup:
+            page.click("#openUrl")
+        assert popup.value.url.startswith(base_url) or popup.value.url == COURSE_SITE
+    else:                                              # another web address: copy only
+        assert page.is_disabled("#openUrl") and page.is_visible("#openNote")
+    page.click("#searchNow")
+    assert_no_script_ran(page)
+
+
+def test_open_link_opens_the_link(page, base_url):
+    opened = []
+    page.context.on("request", lambda r: opened.append(r.url))
+    page.goto(base_url)
+    page.fill("#kw", "AI for Productivity")
+    page.select_option("#venue", "1177")
+    page.check("#days input[value='2']")
+    page.check("#days input[value='4']")
+    opened.clear()
+    with page.expect_popup() as popup:
+        page.click("#openUrl")
+    popup.value.wait_for_url(COURSE_SITE)
+    assert opened[0] == f"{base_url}?kw=AI+for+Productivity&venue=1177&days=2%2C4"
+    assert popup.value.evaluate("window.opener") is None
+    assert page.locator("form[method=get]").count() == 0   # the helper form is gone again
+
+
 def test_link_address_must_be_a_web_address(page, base_url):
     page.goto(base_url)
     page.fill("#base", "javascript:alert(1)//")
-    assert page.get_attribute("#openUrl", "href") == f"{base_url}?kw="
+    assert page.input_value("#outUrl") == f"{base_url}?kw="
+    assert page.is_enabled("#openUrl") and page.is_hidden("#openNote")
     page.fill("#base", "https://www.oncoursesouthwest.co.uk/course-search?old=1")
     assert page.input_value("#outUrl") == "https://www.oncoursesouthwest.co.uk/course-search?kw="
+    assert page.is_disabled("#openUrl") and page.is_visible("#openNote")
