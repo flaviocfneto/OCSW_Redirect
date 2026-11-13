@@ -26,10 +26,13 @@ import json
 import re
 import ssl
 import sys
+import time
+import urllib.error
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date
+from functools import lru_cache
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -84,20 +87,43 @@ QUAL_RX = re.compile(r"^(?:\(HCE\)\s*)?(?:AAT\s+)?(?:L(?:evel)?\s*\d\s+)?(?:Awar
 _ctx = ssl.create_default_context()
 
 
+TRIES = 3  # per request; a network blip or a busy server gets another go
+
+
+def fetch(url, data=None):
+    """The page at url as text. Retries timeouts, dropped connections and server errors."""
+    for attempt in range(1, TRIES + 1):
+        try:
+            req = urllib.request.Request(url, data=data, headers=UA)
+            with urllib.request.urlopen(req, timeout=60, context=_ctx) as r:
+                return r.read().decode("utf-8", "replace")
+        except urllib.error.HTTPError as e:
+            if attempt == TRIES or (e.code < 500 and e.code != 429):  # a 404 stays a 404
+                raise
+        except OSError:  # URLError, timeouts, resets
+            if attempt == TRIES:
+                raise
+        time.sleep(2 ** attempt)
+
+
 def get(url):
-    req = urllib.request.Request(url, headers=UA)
-    with urllib.request.urlopen(req, timeout=60, context=_ctx) as r:
-        return r.read().decode("utf-8", "replace")
+    return fetch(url)
+
+
+@lru_cache(maxsize=None)
+def _search(kw):
+    fields = [("options.Venue", "0"), ("options.KeyWord", kw), ("options.SortBy", "StartDate")]
+    fields += [("days", "false")] * 7
+    page = fetch(COURSE_SITE, urllib.parse.urlencode(fields).encode())
+    return tuple(html.unescape(t).strip() for t in re.findall(r"<h3>([^<]+)</h3>", page))
 
 
 def search(kw):
-    """Course titles the course finder returns for a keyword, as its own form sends it."""
-    fields = [("options.Venue", "0"), ("options.KeyWord", kw), ("options.SortBy", "StartDate")]
-    fields += [("days", "false")] * 7
-    req = urllib.request.Request(COURSE_SITE, data=urllib.parse.urlencode(fields).encode(), headers=UA)
-    with urllib.request.urlopen(req, timeout=60, context=_ctx) as r:
-        page = r.read().decode("utf-8", "replace")
-    return [html.unescape(t).strip() for t in re.findall(r"<h3>([^<]+)</h3>", page)]
+    """Course titles the course finder returns for a keyword, as its own form sends it.
+
+    Each keyword is asked for once per build: full titles are often tried for several courses.
+    """
+    return list(_search(kw))
 
 
 def course_name(title):
@@ -124,8 +150,8 @@ def best_keyword(name, titles, first_hits):
     best = (score(first_hits), name, first_hits)
     if best[0][1] < 0:  # the name also matched other courses: try the full titles
         for kw in sorted({bare_title(t) for t in titles} - {name}):
-            hits = _safe(search, kw) or []
-            if score(hits) > best[0]:
+            hits = _safe(search, kw)
+            if hits and score(hits) > best[0]:
                 best = (score(hits), kw, hits)
     (on, off), kw, hits = best
     return kw, hits, on, -off
@@ -152,7 +178,8 @@ def site_titles():
     with ThreadPoolExecutor(8) as pool:
         ids = list(links)
         for cid, body in zip(ids, pool.map(lambda c: _safe(get, COURSE_SITE + "Course/Details/" + c), ids)):
-            heads = re.findall(r"<h[12][^>]*>\s*([^<]+?)\s*<", body or "")
+            # Linear-time pattern (no overlapping \s* and [^<]+); the trimming is done by strip().
+            heads = [h.strip() for h in re.findall(r"<h[12][^<>]*>([^<]+)<", body or "")]
             # Runs that have gone redirect to the search page; skip them.
             if len(heads) > 1 and heads[0] == "Course Details":
                 titles.setdefault(html.unescape(heads[1]), links[cid])
@@ -188,8 +215,19 @@ def main():
 
     print(f"Testing {len(names)} course names on the course finder...")
     keys = sorted(names)
+    def test(k):
+        """None if the search failed, [] if the name finds nothing, else the best keyword for it."""
+        hits = _safe(search, names[k][0])
+        return hits and best_keyword(names[k][0], names[k][3], hits)
+
     with ThreadPoolExecutor(6) as pool:
-        results = dict(zip(keys, pool.map(lambda k: _safe(search, names[k][0]) or [], keys)))
+        results = dict(zip(keys, pool.map(test, keys)))
+
+    # A search that failed is not a course with no runs. Stop before the presets shrink by mistake.
+    failed = [names[k][0] for k in keys if results[k] is None]
+    if failed:
+        sys.exit(f"{len(failed)} course names could not be tested ({', '.join(failed[:5])}"
+                 f"{', ...' if len(failed) > 5 else ''}). Nothing was written; run the build again.")
 
     presets, dropped = [], []
     for k in keys:
@@ -197,7 +235,7 @@ def main():
         if not results[k]:
             dropped.append((name, area, source))
             continue
-        kw, hits, on, off = best_keyword(name, titles, results[k])
+        kw, hits, on, off = results[k]
         presets.append({"name": name, "kw": kw, "area": area, "runs": on or len(hits), "others": off,
                         "matches": sorted(set(hits))})
 

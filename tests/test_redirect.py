@@ -79,6 +79,14 @@ def launch(page, base_url, query):
     return page.posts[0]
 
 
+def test_launch_skips_the_builder_scripts(page, base_url):
+    """A visitor passing through downloads the page and nothing else."""
+    requested = []
+    page.on("request", lambda r: requested.append(r.url))
+    launch(page, base_url, "kw=digital")
+    assert requested == [f"{base_url}?kw=digital", COURSE_SITE]
+
+
 def test_keyword_search_matches_real_form(page, base_url):
     assert launch(page, base_url, "kw=security") == expected_body(kw="security")
 
@@ -125,8 +133,18 @@ def test_no_parameters_shows_demo(page, base_url):
 
 
 def decode_qr(png_path):
+    """The text in a QR code image. OpenCV sometimes misses a clean code at full size
+    (it depends on the content, and so on the test server's random port), so a miss
+    is retried on a smaller copy."""
     import cv2
-    text, _, _ = cv2.QRCodeDetector().detectAndDecode(cv2.imread(str(png_path)))
+    image = cv2.imread(str(png_path))
+    detector = cv2.QRCodeDetector()
+    text = detector.detectAndDecode(image)[0]
+    for side in (600, 300):
+        if text:
+            break
+        small = cv2.resize(image, (side, side), interpolation=cv2.INTER_NEAREST)
+        text = detector.detectAndDecode(small)[0]
     return text
 
 
@@ -171,3 +189,22 @@ def test_preset_fills_keyword(page, base_url):
     assert page.input_value("#preset") == ""
     page.fill("#kw", "Digital Tools")
     assert page.input_value("#preset") == "Digital Tools"
+
+
+def test_link_too_long_for_a_qr_code(page, base_url):
+    page.goto(base_url)
+    page.fill("#kw", "x" * 3000)
+    assert page.input_value("#outUrl").endswith("x" * 3000)  # the link itself still works
+    assert page.is_visible("#qrNote") and page.is_hidden("#qrCanvas")
+    assert page.is_disabled("#qrDownload")
+    page.fill("#kw", "english")
+    assert page.is_visible("#qrCanvas") and page.is_hidden("#qrNote")
+    assert page.is_enabled("#qrDownload")
+
+
+def test_builder_works_without_the_qr_library(page, base_url):
+    page.route("**/vendor/qrcode.js", lambda route: route.abort())
+    page.goto(base_url)
+    page.fill("#kw", "english")
+    assert page.input_value("#outUrl") == f"{base_url}?kw=english"
+    assert page.is_visible("#preset") and page.is_visible("#qrNote")

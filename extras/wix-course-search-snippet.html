@@ -26,7 +26,9 @@
   var PAGE_PATH = '/course-search';                       // only ever runs on this page
   var COURSE_SITE = 'https://coursesocsw.cognisoft.cloud/';
 
-  var path = location.pathname.replace(/\/+$/, '');
+  var end = location.pathname.length;                     // ignore any trailing slashes
+  while (end && location.pathname.charAt(end - 1) === '/') end--;
+  var path = location.pathname.slice(0, end);
   if (path.slice(-PAGE_PATH.length) !== PAGE_PATH || window.__ocswCourseSearch) return;
   window.__ocswCourseSearch = true;
 
