@@ -39,8 +39,11 @@ Search with the course name, not a single word. The finder matches the keyword a
 `kw=AI for Productivity` brings back every upcoming run of that course at every level (Beginners
 and Improvers) and nothing else. A keyword in quotes finds nothing, so there is no exact-phrase search.
 
-The presets come from `tools/build_presets.py`. It reads every course linked from the OCSW website
-and every course the finder lists. It then cuts each title down to the course name, without the
+The presets come from `tools/build_presets.py`. It reads the course guide list in
+`tools/course_guide.json`, every course linked from the OCSW website and every course the finder
+lists. Courses in the guide are grouped by their pathway (for example "Digital: Data"); a guide
+course with no upcoming run on the finder is listed in the report and does not become a preset.
+When a new guide comes out, update the names and pathways in that file. The script then cuts each title down to the course name, without the
 run code, level or part number. Each name is searched on the finder. When a name also finds other
 courses, the script tries the full titles and keeps the keyword that finds the most runs of the
 right course. Refresh the presets each term:
@@ -83,6 +86,7 @@ site/vendor/qrcode.js               QR code library (qrcode-generator 1.4.4, Kaz
 site/presets.js                     course presets for the link builder (generated)
 tools/build_presets.py              finds course names and tests them on the live course finder
 tools/presets_report.md             what each preset matched when it was last tested (generated)
+tools/course_guide.json             course names and pathways from the digital course guide (edited by hand)
 extras/wix-course-search-snippet.html  same redirect as Wix custom code, for an oncoursesouthwest.co.uk address
 tests/test_redirect.py              browser tests (Playwright + pytest)
 requirements-dev.in                 test dependencies; requirements-dev.txt is the hashed lock file made from it

@@ -6,8 +6,9 @@ The finder matches the phrase against course titles, so a name like
 and a single word like "digital" finds far more than the course you meant.
 
 Where the names come from:
-  1. every course run linked from the On Course South West website (all pages in its sitemap);
-  2. every course run the course finder lists right now (an empty keyword search).
+  1. the course guide (tools/course_guide.json), which also gives each course its pathway;
+  2. every course run linked from the On Course South West website (all pages in its sitemap);
+  3. every course run the course finder lists right now (an empty keyword search).
 
 Each title is cut down to its course name (no run code, level suffix or part number),
 then searched on the live course finder. The finder also searches course descriptions,
@@ -38,6 +39,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 OUT_JS = ROOT / "site" / "presets.js"
 OUT_REPORT = ROOT / "tools" / "presets_report.md"
+GUIDE = ROOT / "tools" / "course_guide.json"
 
 OCSW_SITE = "https://www.oncoursesouthwest.co.uk/"
 COURSE_SITE = "https://coursesocsw.cognisoft.cloud/"
@@ -82,7 +84,9 @@ TOPIC_RX = re.compile(r"^(?:Digital|Wellbeing|Employability|Life Skills|Creative
 TAIL_RX = re.compile(r"(?:\s+(?:Beginners|Improvers|Advanced|Part\s*\d+|L\d|Level\s*\d+(?:\s+Certificate)?|"
                      r"Saltash)|\s*\([^)]*\))+\s*$", re.I)
 # Qualification titles: keep the subject, so "L2 Certificate in X" and "Level 2 Certificate in X" both match.
-QUAL_RX = re.compile(r"^(?:\(HCE\)\s*)?(?:AAT\s+)?(?:L(?:evel)?\s*\d\s+)?(?:Award|Certificate|Diploma)\s+in\s+", re.I)
+# The awarding body and "the" go too: "NCFE Level 2 Certificate in the Principles of X" is "Principles of X".
+QUAL_RX = re.compile(r"^(?:\(HCE\)\s*)?(?:(?:AAT|NCFE)\s+)?(?:L(?:evel)?\s*\d\s+)?(?:Award|Certificate|Diploma)\s+in\s+"
+                     r"(?:the\s+)?", re.I)
 
 _ctx = ssl.create_default_context()
 
@@ -186,6 +190,14 @@ def site_titles():
     return titles, len(pages)
 
 
+def guide_titles():
+    """{course title: pathway} from the course guide, or {} if there is no guide file."""
+    if not GUIDE.exists():
+        return {}
+    guide = json.loads(GUIDE.read_text(encoding="utf-8"))
+    return {title: pathway for pathway, titles in guide["pathways"].items() for title in titles}
+
+
 def _safe(fn, arg):
     try:
         return fn(arg)
@@ -202,8 +214,15 @@ def main():
     listed = search("")
     print(f"  {len(listed)} upcoming runs")
 
-    # course name -> (area, source titles)
+    from_guide = guide_titles()
+    print(f"  {len(from_guide)} courses in the course guide")
+
+    # course name -> (area, source titles). The guide goes first, so its pathway is the course's area.
     names = {}
+    for title, pathway in from_guide.items():
+        n = course_name(title)
+        if n:
+            names.setdefault(n.lower(), [n, pathway, "course guide", set()])[3].add(title)
     for title, area in from_site.items():
         n = course_name(title)
         if n:
@@ -236,6 +255,10 @@ def main():
             dropped.append((name, area, source))
             continue
         kw, hits, on, off = results[k]
+        if source == "course guide" and not on:
+            # In the guide but not on the course finder yet: the hits are other courses that mention it.
+            dropped.append((name, area, source))
+            continue
         presets.append({"name": name, "kw": kw, "area": area, "runs": on or len(hits), "others": off,
                         "matches": sorted(set(hits))})
 

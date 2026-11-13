@@ -1,0 +1,31 @@
+{
+  "source": "Digital courses 2027: full course guide",
+  "note": "Course names and pathways from the guide. tools/build_presets.py tests each name on the course finder; a course with no upcoming runs there is listed in the report, not made a preset.",
+  "pathways": {
+    "Digital: Everyday work": [
+      "Microsoft 365 for Productivity",
+      "Google Workspace for Productivity",
+      "Digital Organisation for Productivity"
+    ],
+    "Digital: AI at work": [
+      "AI for Productivity: Beginners",
+      "AI for Productivity: Improvers",
+      "AI for Business Analysts: Beginners"
+    ],
+    "Digital: Data": [
+      "Data Basics with Excel",
+      "Starter Data Analysis and Dashboards",
+      "First Steps with Python for Data",
+      "Data Project: Answer a Real Question"
+    ],
+    "Digital: Automation and code": [
+      "Automation for Productivity",
+      "Python for Productivity"
+    ],
+    "Digital: Cyber and data protection": [
+      "Introduction to Data Protection",
+      "Introduction to Data Security",
+      "NCFE Level 2 Certificate in the Principles of Cyber Security"
+    ]
+  }
+}
