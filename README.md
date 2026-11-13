@@ -85,6 +85,7 @@ tools/build_presets.py              finds course names and tests them on the liv
 tools/presets_report.md             what each preset matched when it was last tested (generated)
 extras/wix-course-search-snippet.html  same redirect as Wix custom code, for an oncoursesouthwest.co.uk address
 tests/test_redirect.py              browser tests (Playwright + pytest)
+requirements-dev.in                 test dependencies; requirements-dev.txt is the hashed lock file made from it
 .github/workflows/pages.yml         runs the tests, then deploys site/ from the default branch
 ```
 
@@ -102,6 +103,14 @@ GitHub Pages on a free account needs the repo to be public. The page holds no se
 pip install -r requirements-dev.txt
 python -m playwright install chromium
 python -m pytest -v
+```
+
+`requirements-dev.txt` is a lock file: exact versions with hashes, which the GitHub workflow installs
+with `--only-binary :all: --require-hashes`. To change or update a dependency, edit `requirements-dev.in`
+and regenerate it:
+
+```bash
+uv pip compile requirements-dev.in --python-version 3.12 --universal --generate-hashes -o requirements-dev.txt
 ```
 
 The tests never contact the live course finder. Playwright intercepts the request, checks the form

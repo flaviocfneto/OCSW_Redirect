@@ -280,9 +280,10 @@
                 <button class="btn" type="button" data-copy="outUrl">Copy</button>
               </div>
               <div class="actions">
-                <a class="btn ghost" id="openUrl" href="#" target="_blank" rel="noopener">Open link</a>
+                <button class="btn ghost" type="button" id="openUrl">Open link</button>
                 <button class="btn ghost" type="button" id="searchNow">Search now</button>
               </div>
+              <p class="small" id="openNote" hidden>Open link only works with this page's own address. To try a link with another address, copy it and paste it into your browser.</p>
             </div>
 
             <div class="out">
@@ -322,6 +323,7 @@
                   <button class="btn" type="button" id="qrDownload">Download PNG</button>
                 </div>
               </div>
+              <p class="small" id="qrNote" role="status" hidden>No QR code for this link. It may be too long: try a shorter keyword.</p>
               <p class="small">Scan it with your phone before printing. The white border is part of the code, so don't crop it.</p>
             </div>
             <p class="status" id="status" role="status"></p>
@@ -352,8 +354,6 @@
   </footer>
 </div>
 
-<script src="vendor/qrcode.js"></script>
-<script src="presets.js"></script>
 <script>
 (function () {
   var COURSE_SITE = 'https://coursesocsw.cognisoft.cloud/';
@@ -452,193 +452,240 @@
   }
 
   // ---------- DEMO MODE ----------
-  var TILES = [
-    { t: 'Digital skills', d: 'Keyword "digital"', s: { kw: 'digital' } },
-    { t: 'Cyber and data security', d: 'Keyword "security"', s: { kw: 'security' } },
-    { t: 'Learn online', d: 'Venue: Online Delivery', s: { venue: '1177' } },
-    { t: 'At Cobourg House', d: 'Venue: Cobourg House', s: { venue: '961' } },
-    { t: 'English', d: 'Keyword "english"', s: { kw: 'english' } },
-    { t: 'Monday courses', d: 'Day: Monday', s: { days: [2] } }
-  ];
-  var tiles = document.getElementById('tiles');
-  TILES.forEach(function (x) {
-    var a = document.createElement('a');
-    a.className = 'tile';
-    a.href = selfBase + '?' + toQuery(cleanState(x.s));
-    a.target = '_blank'; a.rel = 'noopener';
-    a.innerHTML = '<span class="arrow" aria-hidden="true">&rarr;</span><strong></strong><span></span>';
-    a.querySelector('strong').textContent = x.t;
-    a.querySelector('span:last-child').textContent = x.d;
-    tiles.appendChild(a);
+  // The QR library and the course presets are for the builder only, so they load here:
+  // a visitor passing through to the course finder never downloads them. The builder
+  // still starts if one fails to load, without the presets or without the QR code.
+  var waiting = 2;
+  ['vendor/qrcode.js', 'presets.js'].forEach(function (src) {
+    var el = document.createElement('script');
+    el.src = src;
+    el.onload = el.onerror = function () { if (--waiting === 0) startDemo(); };
+    document.head.appendChild(el);
   });
 
-  // Builder controls
-  var $ = function (id) { return document.getElementById(id); };
-  var venueSel = $('venue');
-  venueSel.add(new Option('Any venue', '0'));
-  VENUES.forEach(function (v) { venueSel.add(new Option(v[1], String(v[0]))); });
-
-  var daysBox = $('days');
-  DAY_NAMES.forEach(function (n, i) {
-    var l = document.createElement('label'); l.className = 'day';
-    l.innerHTML = '<input type="checkbox" value="' + (i + 1) + '"><span>' + n + '</span>';
-    daysBox.appendChild(l);
-  });
-
-  $('base').value = selfBase;
-
-  // Course presets (presets.js, made by tools/build_presets.py): course names the
-  // course finder's search was tested with. Picking one fills in the keyword.
-  var presetSel = $('preset');
-  var PRESETS = (window.OCSW_PRESETS && window.OCSW_PRESETS.presets) || [];
-  if (PRESETS.length) {
-    var groups = {};
-    PRESETS.forEach(function (x) {
-      if (!groups[x.area]) {
-        groups[x.area] = document.createElement('optgroup');
-        groups[x.area].label = x.area;
-        presetSel.appendChild(groups[x.area]);
-      }
-      groups[x.area].appendChild(new Option(x.name + ' (' + x.runs + (x.runs === 1 ? ' run' : ' runs') + ')', x.kw));
-    });
-    $('presetNote').textContent = PRESETS.length + ' course names, each tested on the course finder on ' +
-      window.OCSW_PRESETS.tested + '. Run counts are upcoming runs found that day.';
-    $('presetField').hidden = false;
-    presetSel.addEventListener('change', function () {
-      if (presetSel.value) $('kw').value = presetSel.value;
-    });
-    $('kw').addEventListener('input', function () {
-      presetSel.value = $('kw').value.trim();
-      if (presetSel.selectedIndex === -1) presetSel.value = '';
-    });
-  }
-
-  function readState() {
-    var days = [].map.call(daysBox.querySelectorAll('input:checked'), function (c) { return c.value; });
-    return cleanState({ kw: $('kw').value, venue: venueSel.value, sort: $('sort').value, days: days });
-  }
-
-  function snippet(s, label) {
-    var lines = ['<form method="post" action="' + COURSE_SITE + '">'];
-    formFields(s).forEach(function (p) {
-      lines.push('  <input type="hidden" name="' + p[0] + '" value="' + esc(p[1]) + '">');
-    });
-    lines.push('  <button type="submit">' + esc(label) + '</button>', '</form>');
-    return lines.join('\n');
-  }
-
-  function update() {
-    var s = readState();
-    var label = $('label').value.trim() || 'See our courses';
-    var relevance = $('sort').querySelector('option[value="Relevance"]');
-    relevance.disabled = !s.kw;
-    if (!s.kw && $('sort').value === 'Relevance') $('sort').value = 'StartDate';
-
-    var base = ($('base').value.trim() || selfBase).split(/[?#]/)[0];
-    var url = base + '?' + toQuery(s);
-    $('outUrl').value = url;
-    $('openUrl').href = url;
-    $('outCode').textContent = snippet(s, label);
-
-    var prev = $('preview');
-    prev.innerHTML = '';
-    var f = fillForm(document.createElement('form'), s);
-    f.target = '_blank';
-    var b = document.createElement('button');
-    b.type = 'submit'; b.className = 'btn'; b.textContent = label;
-    f.appendChild(b);
-    prev.appendChild(f);
-    updateQr();
-  }
-
-  // ---------- QR code ----------
-  var QR_MARGIN = 4;   // modules of white border; scanners need it
-
-  function drawQr(canvas, text, size, colour) {
-    var qr = qrcode(0, 'M');
-    qr.addData(text);
-    qr.make();
-    var n = qr.getModuleCount();
-    var scale = Math.max(1, Math.floor(size / (n + QR_MARGIN * 2)));
-    canvas.width = canvas.height = (n + QR_MARGIN * 2) * scale;
-    var ctx = canvas.getContext('2d');
-    ctx.fillStyle = '#ffffff';
-    ctx.fillRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = colour;
-    for (var r = 0; r < n; r++) {
-      for (var c = 0; c < n; c++) {
-        if (qr.isDark(r, c)) ctx.fillRect((c + QR_MARGIN) * scale, (r + QR_MARGIN) * scale, scale, scale);
-      }
-    }
-    return canvas;
-  }
-
-  function qrFileName(s) {
-    var bits = [s.kw, s.venue !== '0' ? 'venue-' + s.venue : '', s.days.length ? 'days-' + s.days.join('') : '']
-      .filter(Boolean).join('-');
-    var slug = bits.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
-    return 'ocsw-courses-' + (slug || 'all') + '.png';
-  }
-
-  function updateQr() {
-    drawQr($('qrCanvas'), $('outUrl').value, 160, $('qrColour').value);
-  }
-
-  $('qrColour').addEventListener('change', updateQr);
-  $('qrDownload').addEventListener('click', function () {
-    var c = drawQr(document.createElement('canvas'), $('outUrl').value,
-                   Number($('qrSize').value), $('qrColour').value);
-    var name = qrFileName(readState());
-    c.toBlob(function (blob) {
+  function startDemo() {
+    var TILES = [
+      { t: 'Digital skills', d: 'Keyword "digital"', s: { kw: 'digital' } },
+      { t: 'Cyber and data security', d: 'Keyword "security"', s: { kw: 'security' } },
+      { t: 'Learn online', d: 'Venue: Online Delivery', s: { venue: '1177' } },
+      { t: 'At Cobourg House', d: 'Venue: Cobourg House', s: { venue: '961' } },
+      { t: 'English', d: 'Keyword "english"', s: { kw: 'english' } },
+      { t: 'Monday courses', d: 'Day: Monday', s: { days: [2] } }
+    ];
+    var tiles = document.getElementById('tiles');
+    TILES.forEach(function (x) {
       var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
-    }, 'image/png');
-  });
-
-  $('builder').addEventListener('input', update);
-  $('builder').addEventListener('change', update);
-
-  $('searchNow').addEventListener('click', function () {
-    var f = fillForm(document.createElement('form'), readState());
-    f.target = '_blank';
-    document.body.appendChild(f);
-    f.submit();
-    f.remove();
-  });
-
-  // Copy buttons
-  function copyText(text) {
-    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
-    return new Promise(function (res, rej) {
-      var t = document.createElement('textarea');
-      t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
-      document.body.appendChild(t); t.select();
-      try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); }
-      t.remove();
+      a.className = 'tile';
+      a.href = selfBase + '?' + toQuery(cleanState(x.s));
+      a.target = '_blank'; a.rel = 'noopener';
+      a.innerHTML = '<span class="arrow" aria-hidden="true">&rarr;</span><strong></strong><span></span>';
+      a.querySelector('strong').textContent = x.t;
+      a.querySelector('span:last-child').textContent = x.d;
+      tiles.appendChild(a);
     });
-  }
-  var statusTimer;
-  document.querySelectorAll('[data-copy]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var el = $(btn.getAttribute('data-copy'));
-      var text = 'value' in el && el.tagName === 'INPUT' ? el.value : el.textContent;
-      var what = el.tagName === 'INPUT' ? 'Link' : 'Button code';
-      copyText(text).then(function () {
-        $('status').textContent = what + ' copied.';
-      }, function () {
-        $('status').textContent = 'Copy failed. Select the text and copy it by hand.';
+
+    // Builder controls
+    var $ = function (id) { return document.getElementById(id); };
+    var venueSel = $('venue');
+    venueSel.add(new Option('Any venue', '0'));
+    VENUES.forEach(function (v) { venueSel.add(new Option(v[1], String(v[0]))); });
+
+    var daysBox = $('days');
+    DAY_NAMES.forEach(function (n, i) {
+      var l = document.createElement('label'); l.className = 'day';
+      l.innerHTML = '<input type="checkbox" value="' + (i + 1) + '"><span>' + n + '</span>';
+      daysBox.appendChild(l);
+    });
+
+    $('base').value = selfBase;
+
+    // Course presets (presets.js, made by tools/build_presets.py): course names the
+    // course finder's search was tested with. Picking one fills in the keyword.
+    var presetSel = $('preset');
+    var PRESETS = (window.OCSW_PRESETS && window.OCSW_PRESETS.presets) || [];
+    if (PRESETS.length) {
+      var groups = {};
+      PRESETS.forEach(function (x) {
+        if (!groups[x.area]) {
+          groups[x.area] = document.createElement('optgroup');
+          groups[x.area].label = x.area;
+          presetSel.appendChild(groups[x.area]);
+        }
+        groups[x.area].appendChild(new Option(x.name + ' (' + x.runs + (x.runs === 1 ? ' run' : ' runs') + ')', x.kw));
       });
-      clearTimeout(statusTimer);
-      statusTimer = setTimeout(function () { $('status').textContent = ''; }, 3000);
-    });
-  });
+      $('presetNote').textContent = PRESETS.length + ' course names, each tested on the course finder on ' +
+        window.OCSW_PRESETS.tested + '. Run counts are upcoming runs found that day.';
+      $('presetField').hidden = false;
+      presetSel.addEventListener('change', function () {
+        if (presetSel.value) $('kw').value = presetSel.value;
+      });
+      $('kw').addEventListener('input', function () {
+        presetSel.value = $('kw').value.trim();
+        if (presetSel.selectedIndex === -1) presetSel.value = '';
+      });
+    }
 
-  update();
+    function readState() {
+      var days = [].map.call(daysBox.querySelectorAll('input:checked'), function (c) { return c.value; });
+      return cleanState({ kw: $('kw').value, venue: venueSel.value, sort: $('sort').value, days: days });
+    }
+
+    function snippet(s, label) {
+      var lines = ['<form method="post" action="' + COURSE_SITE + '">'];
+      formFields(s).forEach(function (p) {
+        lines.push('  <input type="hidden" name="' + p[0] + '" value="' + esc(p[1]) + '">');
+      });
+      lines.push('  <button type="submit">' + esc(label) + '</button>', '</form>');
+      return lines.join('\n');
+    }
+
+    function update() {
+      var s = readState();
+      var label = $('label').value.trim() || 'See our courses';
+      var relevance = $('sort').querySelector('option[value="Relevance"]');
+      relevance.disabled = !s.kw;
+      if (!s.kw && $('sort').value === 'Relevance') $('sort').value = 'StartDate';
+
+      // Web addresses only. The link is shown as text for copying and drawn as a QR code;
+      // nothing typed here is ever put in a clickable link (see the Open link button).
+      var base = $('base').value.trim().split(/[?#]/)[0];
+      if (!/^https?:\/\//i.test(base)) base = selfBase;
+      $('outUrl').value = base + '?' + toQuery(s);
+      $('openUrl').disabled = base !== selfBase;
+      $('openNote').hidden = base === selfBase;
+      $('outCode').textContent = snippet(s, label);
+
+      var prev = $('preview');
+      prev.innerHTML = '';
+      var f = fillForm(document.createElement('form'), s);
+      f.target = '_blank';
+      var b = document.createElement('button');
+      b.type = 'submit'; b.className = 'btn'; b.textContent = label;
+      f.appendChild(b);
+      prev.appendChild(f);
+      updateQr();
+    }
+
+    // ---------- QR code ----------
+    var QR_MARGIN = 4;   // modules of white border; scanners need it
+
+    function drawQr(canvas, text, size, colour) {
+      var qr = qrcode(0, 'M');
+      qr.addData(text);
+      qr.make();
+      var n = qr.getModuleCount();
+      var scale = Math.max(1, Math.floor(size / (n + QR_MARGIN * 2)));
+      canvas.width = canvas.height = (n + QR_MARGIN * 2) * scale;
+      var ctx = canvas.getContext('2d');
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = colour;
+      for (var r = 0; r < n; r++) {
+        for (var c = 0; c < n; c++) {
+          if (qr.isDark(r, c)) ctx.fillRect((c + QR_MARGIN) * scale, (r + QR_MARGIN) * scale, scale, scale);
+        }
+      }
+      return canvas;
+    }
+
+    function qrFileName(s) {
+      var bits = [s.kw, s.venue !== '0' ? 'venue-' + s.venue : '', s.days.length ? 'days-' + s.days.join('') : '']
+        .filter(Boolean).join('-');
+      var slug = bits.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 60);
+      return 'ocsw-courses-' + (slug || 'all') + '.png';
+    }
+
+    // Redraws only when the link or colour changed. A link too long for a QR code
+    // (or a QR library that did not load) shows a note instead of breaking the builder.
+    var qrShown;
+    function updateQr() {
+      var key = $('qrColour').value + ' ' + $('outUrl').value;
+      if (key === qrShown) return;
+      qrShown = key;
+      var ok = true;
+      try {
+        drawQr($('qrCanvas'), $('outUrl').value, 160, $('qrColour').value);
+      } catch (e) {
+        ok = false;
+      }
+      $('qrCanvas').hidden = !ok;
+      $('qrDownload').disabled = !ok;
+      $('qrNote').hidden = ok;
+    }
+
+    $('qrColour').addEventListener('change', updateQr);
+    $('qrDownload').addEventListener('click', function () {
+      var c = drawQr(document.createElement('canvas'), $('outUrl').value,
+                     Number($('qrSize').value), $('qrColour').value);
+      var name = qrFileName(readState());
+      c.toBlob(function (blob) {
+        if (!blob) return;
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+      }, 'image/png');
+    });
+
+    $('builder').addEventListener('input', update);
+    $('builder').addEventListener('change', update);
+
+    // Open link: a GET form to this page, so the browser builds the address from the
+    // fields itself. Typed text is only ever a field value, never part of an href.
+    $('openUrl').addEventListener('click', function () {
+      var f = document.createElement('form');
+      f.method = 'get'; f.target = '_blank'; f.rel = 'noopener';
+      new URLSearchParams(toQuery(readState())).forEach(function (value, name) {
+        var i = document.createElement('input');
+        i.type = 'hidden'; i.name = name; i.value = value;
+        f.appendChild(i);
+      });
+      document.body.appendChild(f);
+      f.submit();
+      f.remove();
+    });
+
+    $('searchNow').addEventListener('click', function () {
+      var f = fillForm(document.createElement('form'), readState());
+      f.target = '_blank';
+      document.body.appendChild(f);
+      f.submit();
+      f.remove();
+    });
+
+    // Copy buttons
+    function copyText(text) {
+      if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+      return new Promise(function (res, rej) {
+        var t = document.createElement('textarea');
+        t.value = text; t.style.position = 'fixed'; t.style.opacity = '0';
+        document.body.appendChild(t); t.select();
+        try { document.execCommand('copy') ? res() : rej(); } catch (e) { rej(e); }
+        t.remove();
+      });
+    }
+    var statusTimer;
+    document.querySelectorAll('[data-copy]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var el = $(btn.getAttribute('data-copy'));
+        var text = 'value' in el && el.tagName === 'INPUT' ? el.value : el.textContent;
+        var what = el.tagName === 'INPUT' ? 'Link' : 'Button code';
+        copyText(text).then(function () {
+          $('status').textContent = what + ' copied.';
+        }, function () {
+          $('status').textContent = 'Copy failed. Select the text and copy it by hand.';
+        });
+        clearTimeout(statusTimer);
+        statusTimer = setTimeout(function () { $('status').textContent = ''; }, 3000);
+      });
+    });
+
+
+    update();
+  }
 })();
 </script>
 </body>
