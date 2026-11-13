@@ -208,3 +208,11 @@ def test_builder_works_without_the_qr_library(page, base_url):
     page.fill("#kw", "english")
     assert page.input_value("#outUrl") == f"{base_url}?kw=english"
     assert page.is_visible("#preset") and page.is_visible("#qrNote")
+
+
+def test_link_address_must_be_a_web_address(page, base_url):
+    page.goto(base_url)
+    page.fill("#base", "javascript:alert(1)//")
+    assert page.get_attribute("#openUrl", "href") == f"{base_url}?kw="
+    page.fill("#base", "https://www.oncoursesouthwest.co.uk/course-search?old=1")
+    assert page.input_value("#outUrl") == "https://www.oncoursesouthwest.co.uk/course-search?kw="

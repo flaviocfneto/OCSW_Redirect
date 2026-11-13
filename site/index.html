@@ -545,7 +545,9 @@
       relevance.disabled = !s.kw;
       if (!s.kw && $('sort').value === 'Relevance') $('sort').value = 'StartDate';
 
-      var base = ($('base').value.trim() || selfBase).split(/[?#]/)[0];
+      // Web addresses only: the link below is clickable, so a typed "javascript:" address must not reach it.
+      var base = $('base').value.trim().split(/[?#]/)[0];
+      if (!/^https?:\/\//i.test(base)) base = selfBase;
       var url = base + '?' + toQuery(s);
       $('outUrl').value = url;
       $('openUrl').href = url;
